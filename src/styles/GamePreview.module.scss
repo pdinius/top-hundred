@@ -1,0 +1,41 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gameId {
+  width: 5rem;
+  text-align: center;
+}
+
+.imageContainer {
+  height: 152px;
+  width: 152px;
+  display: grid;
+  place-content: center;
+
+  & img {
+    max-width: 152px;
+    border-radius: 3px;
+    border: 1px solid #666;
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: large;
+  color: white;
+  border: 1px solid #111;
+  border-radius: 3px;
+  background-color: #292929;
+}
+
+.grey {
+  font-size: small;
+  color: #999;
+}
