@@ -2,12 +2,36 @@
   background: white;
   padding: 0.25rem;
   display: flex;
-  gap: 2px;
+  gap: 3px;
   justify-content: center;
+  align-items: center;
+}
+
+.pivot {
+  color: white;
+  background: #333;
+  border-radius: 3px;
+  padding-inline: 0.5rem;
+}
+
+.barsContainer {
+  display: flex;
+  gap: 1px;
 }
 
 .bar {
   width: 2px;
   height: 1rem;
   background: #333;
+}
+
+.current.bar {
+  background: rgb(255, 176, 98);
+}
+
+.divider {
+  height: 1.5rem;
+  width: 4px;
+  background: #333;
+  border-radius: 2px;
 }

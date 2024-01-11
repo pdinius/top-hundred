@@ -4,19 +4,41 @@ import styles from "@/styles/Status.module.scss";
 
 interface StatusProps {
   index: number;
-  pivot?: GameData;
-  sorted: Array<Array<GameData>>;
   completed: Array<Array<GameData> | GameData>;
-  remaining: Array<GameData>;
 }
 
-export const Status: FC<StatusProps> = ({ index, pivot, sorted, completed, remaining }) => {
-  const better = Math.ceil(remaining.length / 2);
-  const worse = Math.floor(remaining.length / 2);
-  const sortedWorse = sorted[0].length;
-  const sortedBetter = sorted[1].length;
+export const Status: FC<StatusProps> = ({ index, completed }) => {
+  return (
+    <div className={styles.container}>
+      {/* COMPLETED WORSE */}
+      {Array.from({ length: completed.length }, (_, i) => (
+        <Bars key={i} item={completed[i]} isCurrent={i === index} />
+      ))}
+    </div>
+  );
+};
 
-  return <div className={styles.container}>
-    <div className={styles.bar} title={pivot?.name} />
-  </div>;
+interface BarsProps {
+  item: GameData | Array<GameData>;
+  isCurrent: boolean;
+}
+
+const Bars: FC<BarsProps> = ({ item, isCurrent }) => {
+  if (Array.isArray(item)) {
+    return (
+      <div className={styles.barsContainer}>
+        {Array.from({ length: item.length }, (_, i) => {
+          return (
+            <div
+              key={i}
+              className={`${styles.bar} ${isCurrent ? styles.current : ""}`}
+              title={item[i].name}
+            />
+          );
+        })}
+      </div>
+    );
+  } else {
+    return <div className={styles.bar} title={item.name} />;
+  }
 };

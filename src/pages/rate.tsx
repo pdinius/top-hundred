@@ -54,7 +54,7 @@ export default function App() {
   const [pivot, setPivot] = useState<GameData>();
   const [remaining, setRemaining] = useState<Array<GameData>>([]);
   const [index, setIndex] = useState(0);
-
+  const [showResults, setShowResults] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -69,14 +69,15 @@ export default function App() {
         });
         const shuffled = shuffle(parsed);
         setCompleted([shuffled]);
-        // const dPivot = shuffled[0];
-        // const dWorse = shuffled.slice(1, 6);
-        // const dBetter = shuffled.slice(6, 11);
-        // const dRemaining = shuffled.slice(11);
-        // setRemaining(dRemaining);
-        // setWorse(dWorse);
-        // setBetter(dBetter);
-        // setPivot(dPivot);
+        console.log([shuffled]);
+        const dPivot = shuffled[0];
+        const dWorse = shuffled.slice(1, 6);
+        const dBetter = shuffled.slice(6, 11);
+        const dRemaining = shuffled.slice(11);
+        setRemaining(dRemaining);
+        setWorse(dWorse);
+        setBetter(dBetter);
+        setPivot(dPivot);
       }
     }
 
@@ -132,6 +133,32 @@ export default function App() {
     if (remaining.length === 0) {
       // NEXT PIVOT
       // Replace completed[index] with [sorted[0], pivot, sorted[1]]
+      setCompleted(curr => {
+        let copy = curr.slice();
+        copy.splice(index, 1, sorted[0], pivot!, sorted[1]);
+        copy = copy.map(v => {
+          if (Array.isArray(v) && v.length === 1) {
+            return v[0];
+          } else {
+            return v;
+          }
+        }).filter(v => Array.isArray(v) ? v.length > 0 : true);
+
+        if (copy.every(c => !Array.isArray(c))) {
+          setShowResults(true)
+          return copy;
+        }
+
+        const newIndex = copy.findIndex(v => Array.isArray(v));
+        setIndex(newIndex);
+        const next = shuffle(copy.slice()[newIndex] as Array<GameData>);
+        setPivot(next[0]);
+        setWorse(next.slice(1, 6));
+        setBetter(next.slice(6, 11));
+        setRemaining(next.slice(11));
+        return copy;
+      });
+      setSorted([[], []]);
     } else {
       const nextWorse = remaining.slice(0, 5);
       const nextBetter = remaining.slice(5, 10);
@@ -146,10 +173,7 @@ export default function App() {
     <div className={styles.outerContainer}>
       <Status
         index={index}
-        pivot={pivot}
-        sorted={sorted}
         completed={completed}
-        remaining={remaining}
       />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
