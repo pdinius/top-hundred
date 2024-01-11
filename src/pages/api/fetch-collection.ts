@@ -20,7 +20,7 @@ export default async function handler(
   }
   const cache = JSON.parse(fs.readFileSync(CACHE_PATH, "utf-8"));
   let url = `https://boardgamegeek.com/xmlapi2/collection?username=${username}`;
-  if (played) url += "&played=1";
+  if (played === "true") url += "&played=1";
   let text: string;
 
   try {

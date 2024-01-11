@@ -1,4 +1,4 @@
-import { LOCAL_KEY, SAVED_KEY } from "@/constants";
+import { LOCAL_KEY, PROGRESS_KEY, SAVED_KEY } from "@/constants";
 import { GameData } from "@/types/game-types";
 import React, { useEffect, useState } from "react";
 import {
@@ -88,15 +88,26 @@ export default function App() {
       if (finished) {
         router.push("results");
       } else {
-        setPivot(shuffled[0]);
-        if (shuffled.length < 11) {
-          const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
-          setWorse(shuffled.slice(1, cutoff));
-          setBetter(shuffled.slice(cutoff));
+        const progress = localStorage.getItem(PROGRESS_KEY);
+        if (progress) {
+          const { index, better, worse, pivot, sorted, remaining } = JSON.parse(progress);
+          setIndex(index);
+          setBetter(better);
+          setWorse(worse);
+          setPivot(pivot);
+          setSorted(sorted);
+          setRemaining(remaining);
         } else {
-          setWorse(shuffled.slice(1, 6));
-          setBetter(shuffled.slice(6, 11));
-          setRemaining(shuffled.slice(11));
+          setPivot(shuffled[0]);
+          if (shuffled.length < 11) {
+            const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
+            setWorse(shuffled.slice(1, cutoff));
+            setBetter(shuffled.slice(cutoff));
+          } else {
+            setWorse(shuffled.slice(1, 6));
+            setBetter(shuffled.slice(6, 11));
+            setRemaining(shuffled.slice(11));
+          }
         }
       }
     }
@@ -148,6 +159,15 @@ export default function App() {
       const copy = curr.slice();
       copy[0].push(...worse);
       copy[1].push(...better);
+      const progress = {
+        pivot,
+        index,
+        better,
+        worse,
+        sorted: copy,
+        remaining,
+      };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
       return copy;
     });
     if (remaining.length === 0) {
