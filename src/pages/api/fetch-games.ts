@@ -21,8 +21,13 @@ export default async function handler(
   }
   const games = queryGames.split(",");
   const gamedata: Array<GameData> = [];
+  const ids: Array<string> = [];
 
   for (const g of games) {
+    if (/^\d+$/.test(g)) {
+      ids.push(g);
+      continue;
+    }
     const searchUrl = `https://boardgamegeek.com/xmlapi2/search?query=${encodeURI(
       g
     )}&exact=1`;
@@ -37,34 +42,42 @@ export default async function handler(
       fetchCache[searchUrl] = text;
     }
 
-    const nameRe = text.match(/(?<=primary".+?value=").+?(?="\/>)/) || [];
-    const ids = text.match(/(?<=id=")\d+/g) || [];
-    ids.sort((a, b) => +b - +a);
-    const name = nameRe[0];
+    const reId = text.match(/(?<=id=")\d+/g) || [];
+    reId.sort((a, b) => +b - +a);
     const id = ids[0];
 
-    if (!id || !name) {
-      gamedata.push({ name: g });
+    if (id) ids.push(id);
+  }
+
+  for (let i = 0; i < ids.length; i += 40) {
+    const slice = ids.slice(i, i + 40);
+    const thingUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${slice.join(',')}`;
+
+    let thingText: string;
+    if (fetchCache[thingUrl]) {
+      thingText = fetchCache[thingUrl];
     } else {
-      const thingUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${ids[0]}`;
+      await new Promise((res) => setTimeout(res, 500));
+      const thingData = await fetch(thingUrl);
+      thingText = await thingData.text();
+      fetchCache[thingUrl] = thingText;
+    }
+    
+    const names = thingText.match(/(?<=primary".+?value=").+?(?=" \/>)/g);
+    const thumbs = thingText.match(/(?<=<thumbnail>)[^<]+/g) || [];
+    const images = thingText.match(/(?<=<image>)[^<]+/g) || [];
 
-      let thingText: string;
-      if (fetchCache[thingUrl]) {
-        thingText = fetchCache[thingUrl];
-      } else {
-        await new Promise((res) => setTimeout(res, 500));
-        const thingData = await fetch(thingUrl);
-        thingText = await thingData.text();
-        fetchCache[thingUrl] = thingText;
-      }
+    console.log(names);
 
-      const image = thingText.match(/(?<=<thumbnail>)[^<]+/) || [];
+    if (!names || !thumbs || !images) break;
+    for (let i = 0; i < slice.length; ++i) {
       const game = {
-        name,
-        id,
-        image: image[0],
+        name: names[i],
+        id: slice[i],
+        image: thumbs[i],
+        fullSize: images[i],
       };
-      gamedataCache[id] = game;
+      gamedataCache[slice[i]] = game;
       gamedata.push(game);
     }
   }

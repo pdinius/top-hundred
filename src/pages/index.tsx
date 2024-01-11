@@ -6,7 +6,7 @@ import { GamePreview } from "@/components/GamePreview";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { Checkbox } from "@/components/Checkbox";
 import { useRouter } from "next/router";
-import { LOCAL_KEY } from "@/constants";
+import { LOCAL_KEY, PREV_KEY, SAVED_KEY } from "@/constants";
 
 export const cleanString = (s: string) => {
   s = s.replace(/&#039;/g, "'");
@@ -29,6 +29,7 @@ export default function Home() {
     if (isServer) return;
     const loaded = localStorage.getItem(LOCAL_KEY);
     if (loaded) {
+      console.log(loaded);
       setGamedata(JSON.parse(loaded));
     }
   }, []);
@@ -219,6 +220,16 @@ export default function Home() {
             <div className={styles.pushed} />
             <button
               onClick={() => {
+                const saved = localStorage.getItem(SAVED_KEY);
+                if (saved) {
+                  const prev = localStorage.getItem(PREV_KEY);
+                  let prevArr: Array<string> = [];
+                  if (prev) {
+                    prevArr = JSON.parse(prev);
+                  }
+                  prevArr.push(saved);
+                  localStorage.removeItem(SAVED_KEY);
+                }
                 localStorage.setItem(
                   "current-list",
                   JSON.stringify(gamedata.filter((g) => g.selected))

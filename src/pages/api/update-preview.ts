@@ -30,11 +30,13 @@ export default async function handler(
     );
     const thingText = await thingData.text();
     const image = thingText.match(/(?<=<thumbnail>)[^<]+/) || [];
+    const fullSize = thingText.match(/(?<=<image>)[^<]+/) || [];
     const name = thingText.match(/(?<=primary".+?value=").+?(?=" \/)/) || [];
     const data = {
       name: name[0] || "",
       id: queryId,
       image: image[0],
+      fullSize: fullSize[0],
     };
 
     fs.writeFileSync(DATA_PATH, JSON.stringify(data));

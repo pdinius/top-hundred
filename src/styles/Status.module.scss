@@ -9,9 +9,8 @@
 
 .pivot {
   color: white;
-  background: #333;
-  border-radius: 3px;
-  padding-inline: 0.5rem;
+  border-radius: 999px;
+  padding-inline: 0.75rem;
 }
 
 .barsContainer {
@@ -25,13 +24,29 @@
   background: #333;
 }
 
-.current.bar {
-  background: rgb(255, 176, 98);
+.orange {
+  background: #ff6b30;
 }
 
-.divider {
-  height: 1.5rem;
-  width: 4px;
-  background: #333;
-  border-radius: 2px;
+.complete {
+  animation: bounce 2s linear infinite;
+  background: rgb(202, 137, 255);
+}
+
+@keyframes bounce {
+  0% {
+    translate: 0 0;
+  }
+
+  10% {
+    translate: 0 0.15rem;
+  }
+
+  30% {
+    translate: 0 -0.15rem;
+  }
+
+  40% {
+    translate: 0 0;
+  }
 }

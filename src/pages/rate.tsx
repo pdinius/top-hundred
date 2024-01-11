@@ -1,4 +1,4 @@
-import { LOCAL_KEY } from "@/constants";
+import { LOCAL_KEY, SAVED_KEY } from "@/constants";
 import { GameData } from "@/types/game-types";
 import React, { useEffect, useState } from "react";
 import {
@@ -11,6 +11,7 @@ import styles from "@/styles/Rate.module.scss";
 import { cleanString } from ".";
 import { GameCard } from "@/components/GameCard";
 import { Status } from "@/components/Status";
+import { useRouter } from "next/router";
 
 const shuffle = <T,>(array: Array<T>): Array<T> => {
   let m = array.length,
@@ -54,30 +55,49 @@ export default function App() {
   const [pivot, setPivot] = useState<GameData>();
   const [remaining, setRemaining] = useState<Array<GameData>>([]);
   const [index, setIndex] = useState(0);
-  const [showResults, setShowResults] = useState(false);
   const [enabled, setEnabled] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     const animation = requestAnimationFrame(() => setEnabled(true));
 
     if (typeof window !== "undefined") {
       const data = localStorage.getItem(LOCAL_KEY);
-      if (data) {
+      const saved = localStorage.getItem(SAVED_KEY);
+      let finished = false;
+      let shuffled: Array<GameData> = [];
+      if (saved) {
+        let parsed: Array<GameData | Array<GameData>> = JSON.parse(saved);
+        const nextIndex = parsed.findIndex((p) => Array.isArray(p));
+        setCompleted(parsed);
+        if (nextIndex > -1) {
+          setIndex(nextIndex);
+          shuffled = shuffle(parsed[nextIndex] as Array<GameData>);
+        } else {
+          finished = true;
+        }
+      } else if (data) {
         const parsed: Array<GameData> = JSON.parse(data).map((v: GameData) => {
           v.name = cleanString(v.name);
           return v;
         });
-        const shuffled = shuffle(parsed);
         setCompleted([shuffled]);
-        console.log([shuffled]);
-        const dPivot = shuffled[0];
-        const dWorse = shuffled.slice(1, 6);
-        const dBetter = shuffled.slice(6, 11);
-        const dRemaining = shuffled.slice(11);
-        setRemaining(dRemaining);
-        setWorse(dWorse);
-        setBetter(dBetter);
-        setPivot(dPivot);
+        shuffled = shuffle(parsed);
+      }
+      if (finished) {
+        router.push("results");
+      } else {
+        setPivot(shuffled[0]);
+        if (shuffled.length < 11) {
+          const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
+          setWorse(shuffled.slice(1, cutoff));
+          setBetter(shuffled.slice(cutoff));
+        } else {
+          setWorse(shuffled.slice(1, 6));
+          setBetter(shuffled.slice(6, 11));
+          setRemaining(shuffled.slice(11));
+        }
       }
     }
 
@@ -133,48 +153,64 @@ export default function App() {
     if (remaining.length === 0) {
       // NEXT PIVOT
       // Replace completed[index] with [sorted[0], pivot, sorted[1]]
-      setCompleted(curr => {
+      setCompleted((curr) => {
         let copy = curr.slice();
         copy.splice(index, 1, sorted[0], pivot!, sorted[1]);
-        copy = copy.map(v => {
-          if (Array.isArray(v) && v.length === 1) {
-            return v[0];
-          } else {
-            return v;
-          }
-        }).filter(v => Array.isArray(v) ? v.length > 0 : true);
+        copy = copy
+          .map((v) => {
+            if (Array.isArray(v) && v.length === 1) {
+              return v[0];
+            } else {
+              return v;
+            }
+          })
+          .filter((v) => (Array.isArray(v) ? v.length > 0 : true));
 
-        if (copy.every(c => !Array.isArray(c))) {
-          setShowResults(true)
+        if (typeof window !== "undefined") {
+          localStorage.setItem(SAVED_KEY, JSON.stringify(copy));
+        }
+
+        if (copy.every((c) => !Array.isArray(c))) {
+          router.push("results");
           return copy;
         }
 
-        const newIndex = copy.findIndex(v => Array.isArray(v));
+        const newIndex = copy.findIndex((v) => Array.isArray(v));
         setIndex(newIndex);
         const next = shuffle(copy.slice()[newIndex] as Array<GameData>);
         setPivot(next[0]);
-        setWorse(next.slice(1, 6));
-        setBetter(next.slice(6, 11));
-        setRemaining(next.slice(11));
+        if (next.length < 11) {
+          const cutoff = Math.ceil((next.length - 1) / 2) + 1;
+          setWorse(next.slice(1, cutoff));
+          setBetter(next.slice(cutoff));
+          setRemaining([]);
+        } else {
+          setWorse(next.slice(1, 6));
+          setBetter(next.slice(6, 11));
+          setRemaining(next.slice(11));
+        }
         return copy;
       });
       setSorted([[], []]);
     } else {
-      const nextWorse = remaining.slice(0, 5);
-      const nextBetter = remaining.slice(5, 10);
-      const nextRemaining = remaining.slice(10);
-      setWorse(nextWorse);
-      setBetter(nextBetter);
-      setRemaining(nextRemaining);
+      if (remaining.length < 11) {
+        const cutoff = Math.ceil((remaining.length - 1) / 2);
+        setWorse(remaining.slice(0, cutoff));
+        setBetter(remaining.slice(cutoff));
+        setRemaining([]);
+      } else {
+        setWorse(remaining.slice(0, 5));
+        setBetter(remaining.slice(5, 10));
+        setRemaining(remaining.slice(10));
+      }
     }
   };
 
+  const rLen = worse.length + better.length + remaining.length;
+
   return (
     <div className={styles.outerContainer}>
-      <Status
-        index={index}
-        completed={completed}
-      />
+      <Status index={index} sorted={sorted} completed={completed} rLen={rLen} />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId={"worse"} key={"worse"}>

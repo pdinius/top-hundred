@@ -44,8 +44,9 @@ export default async function handler(
   const ids = text.match(/(?<=objectid=")\d+/g);
   const names = text.match(/[^>]+(?=<\/name>)/g);
   const thumbnails = text.match(/[^>]+(?=<\/thumbnail>)/g);
+  const images = text.match(/[^>]+(?=<\/image>)/g);
 
-  if (!ids || !names || !thumbnails) {
+  if (!ids || !names || !thumbnails || !images) {
     res.status(500).json({ message: "C" });
     return;
   }
@@ -56,6 +57,7 @@ export default async function handler(
       id: ids[i],
       name: names[i],
       image: thumbnails[i],
+      fullSize: images[i]
     });
   }
 
