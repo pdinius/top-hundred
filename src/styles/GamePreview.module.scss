@@ -3,6 +3,9 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  background: #444;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
 }
 
 .gameId {
@@ -15,6 +18,7 @@
   width: 152px;
   display: grid;
   place-content: center;
+  cursor: pointer;
 
   & img {
     max-width: 152px;
@@ -33,9 +37,53 @@
   border: 1px solid #111;
   border-radius: 3px;
   background-color: #292929;
+  text-align: center;
 }
 
 .grey {
   font-size: small;
   color: #999;
+}
+
+.actionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.removeButton {
+  position: relative;
+  background: rgb(221, 33, 33);
+  min-width: revert;
+  height: 16px;
+  width: 16px;
+  display: flex;
+  border-radius: 50%;
+  padding: 0;
+  border: 1px solid rgb(219, 121, 121);
+}
+
+.stripA,
+.stripB {
+  --width: 2px;
+  --height: 12px;
+  position: absolute;
+  background: white;
+  width: var(--width);
+  height: var(--height);
+  left: calc(50% - var(--width) / 2);
+  top: calc(50% - var(--height) / 2);
+}
+
+.stripA {
+  rotate: 45deg;
+}
+
+.stripB {
+  rotate: -45deg;
+}
+
+.bggLink {
+  width: 20px;
+  cursor: pointer;
 }

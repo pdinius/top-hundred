@@ -1,29 +1,90 @@
 import Head from "next/head";
-import { Inter } from "next/font/google";
 import styles from "@/styles/Home.module.scss";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GameData } from "@/types/game-types";
-import { GamePreview } from "@/components/GamePreview/GamePreview";
-// import { useRouter } from "next/router";
+import { GamePreview } from "@/components/GamePreview";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { Checkbox } from "@/components/Checkbox";
+import { useRouter } from "next/router";
+import { LOCAL_KEY } from "@/constants";
 
-const inter = Inter({ subsets: ["latin"] });
+export const cleanString = (s: string) => {
+  s = s.replace(/&#039;/g, "'");
+  return s;
+}
+
+const isServer = typeof window === "undefined";
 
 export default function Home() {
   const [games, setGames] = useState("");
-  const [gamedata, setGamedata] = useState<Array<GameData>>([]);
-  // const router = useRouter();
-  // router.push("other-page");
+  const [gamedata, setGamedata] = useState<
+    Array<GameData & { selected: boolean }>
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [onlyPlayed, setOnlyPlayed] = useState(false);
+  const [username, setUsername] = useState("");
+  const router = useRouter();
 
-  const fetchGames = () => {
-    fetch(`/api/fetch-games?games=${games.trim().replace(/\n/g, ",")}`).then(
-      (res) => {
-        res.json().then((json) => {
-          if (json.message === "A") {
-            setGamedata(json.data);
+  useEffect(() => {
+    if (isServer) return;
+    const loaded = localStorage.getItem(LOCAL_KEY);
+    if (loaded) {
+      setGamedata(JSON.parse(loaded));
+    }
+  }, []);
+
+  const loadCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username) return;
+    setLoading(true);
+    try {
+      const data = await fetch(
+        `/api/fetch-collection?name=${username}&played=${onlyPlayed}`
+      );
+      const json: { message: string; data: Array<GameData> } =
+        await data.json();
+      if (json.message === "A") {
+        setGamedata((curr) => {
+          const copy = curr.slice();
+          for (const gd of json.data) {
+            if (!copy.find((c) => c.id === gd.id)) {
+              copy.push({ ...gd, selected: false });
+            }
           }
+          return copy;
         });
       }
-    );
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGames = async () => {
+    setLoading(true);
+    try {
+      const fetched = await fetch(
+        `/api/fetch-games?games=${games.trim().replace(/\n/g, ",")}`
+      );
+      const json: { message: string; data: Array<GameData> } =
+        await fetched.json();
+      if (json.message === "A") {
+        setGamedata((curr) => {
+          const copy = curr.slice();
+          for (const gd of json.data) {
+            if (!copy.find((c) => c.id === gd.id)) {
+              copy.push({ ...gd, selected: false });
+            }
+          }
+          return copy;
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateInput =
@@ -39,17 +100,47 @@ export default function Home() {
   const updateGameData =
     (idx: number) => (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
-        fetch(`/api/update-preview?id=${gamedata[idx].id}`).then((res) => {
-          res.json().then((json) => {
-            setGamedata((curr) => {
-              const copy = curr.slice();
-              copy[idx] = json.data;
-              return copy;
-            });
+        setLoading(true);
+        fetch(`/api/update-preview?id=${gamedata[idx].id}`)
+          .then((res) => {
+            res
+              .json()
+              .then((json) => {
+                setGamedata((curr) => {
+                  const copy = curr.slice();
+                  copy[idx] = json.data;
+                  return copy;
+                });
+              })
+              .finally(() => {
+                setLoading(false);
+              });
+          })
+          .catch((e) => {
+            console.log(e);
+            setLoading(false);
           });
-        });
       }
     };
+
+  const removeGameData = (idx: number) => () => {
+    setGamedata((curr) => {
+      const copy = curr.slice();
+      copy.splice(idx, 1);
+      return copy;
+    });
+  };
+
+  const toggleSelected = (idx: number) => () => {
+    const state = gamedata[idx].selected;
+    setGamedata((curr) => {
+      const copy = curr.slice();
+      copy[idx].selected = !state;
+      return copy;
+    });
+  };
+
+  const count = gamedata.filter((g) => g.selected).length;
 
   return (
     <>
@@ -61,22 +152,99 @@ export default function Home() {
       </Head>
       <main className={styles.landing}>
         <section className={styles.left}>
-          <textarea
-            className={styles.gameNames}
-            value={games}
-            onChange={(e) => setGames(e.target.value)}
-          ></textarea>
-          <button onClick={fetchGames}>go</button>
+          <form className={styles.innerLeft} onSubmit={loadCollection}>
+            <input
+              placeholder="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className={styles.username}
+            />
+            <Checkbox
+              label="only played"
+              val={onlyPlayed}
+              setter={setOnlyPlayed}
+            />
+            <button type="submit" disabled={!username}>
+              load collection
+            </button>
+            <div className={styles.divider}></div>
+            <textarea
+              placeholder="paste game names..."
+              className={styles.gameNames}
+              value={games}
+              onChange={(e) => setGames(e.target.value)}
+            ></textarea>
+            <button onClick={fetchGames}>go</button>
+          </form>
         </section>
         <section className={styles.right}>
-          {gamedata.map((g, i) => (
-            <GamePreview
-              key={i}
-              {...g}
-              updateInput={updateInput(i)}
-              updateGameData={updateGameData(i)}
-            />
-          ))}
+          <div className={styles.topBar}>
+            <span>
+              # games:{" "}
+              <span className="bold-text">
+                {count} / {gamedata.length}
+              </span>
+            </span>
+            <button
+              onClick={() =>
+                setGamedata((curr) => {
+                  const copy = curr.slice();
+                  return copy.map((g) => ({ ...g, selected: true }));
+                })
+              }
+            >
+              select all
+            </button>
+            <button
+              onClick={() =>
+                setGamedata((curr) => {
+                  const copy = curr.slice();
+                  return copy.map((g) => ({ ...g, selected: false }));
+                })
+              }
+            >
+              deselect all
+            </button>
+            <button
+              onClick={() => {
+                if (isServer) return;
+                localStorage.setItem(
+                  LOCAL_KEY,
+                  JSON.stringify(gamedata)
+                );
+              }}
+            >
+              save
+            </button>
+            <div className={styles.pushed} />
+            <button
+              onClick={() => {
+                localStorage.setItem(
+                  "current-list",
+                  JSON.stringify(gamedata.filter((g) => g.selected))
+                );
+                router.push("rate");
+              }}
+              className={`${styles.startButton} ${
+                count >= 100 ? styles.flashing : ""
+              }`}
+            >
+              start sorting
+            </button>
+          </div>
+          <div className={styles.gameGrid}>
+            {gamedata.map((g, i) => (
+              <GamePreview
+                key={i}
+                {...g}
+                updateInput={updateInput(i)}
+                updateGameData={updateGameData(i)}
+                removeGameData={removeGameData(i)}
+                toggleSelected={toggleSelected(i)}
+              />
+            ))}
+          </div>
+          <LoadingOverlay display={loading} />
         </section>
       </main>
     </>

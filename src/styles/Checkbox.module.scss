@@ -1,0 +1,16 @@
+.container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.check {
+  accent-color: #555;
+}
+
+.label {
+  position: relative;
+  top: -1px;
+  color: white;
+  flex-grow: 1;
+}

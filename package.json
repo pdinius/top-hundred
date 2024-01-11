@@ -9,10 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/react-beautiful-dnd": "^13.1.8",
+    "@types/uuid": "^9.0.7",
     "next": "14.0.4",
     "react": "^18",
-    "react-dom": "^18",
-    "sass": "^1.69.7"
+    "react-beautiful-dnd": "^13.1.1",
+    "react-beautiful-dnd-next": "^11.0.5",
+    "react-dom": "^18.2.0",
+    "sass": "^1.69.7",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -1,0 +1,13 @@
+.container {
+  background: white;
+  padding: 0.25rem;
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+
+.bar {
+  width: 2px;
+  height: 1rem;
+  background: #333;
+}
