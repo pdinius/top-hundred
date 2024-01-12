@@ -31,6 +31,11 @@ const shuffle = <T,>(array: Array<T>): Array<T> => {
   return array;
 };
 
+const uniqueFilter = (g: GameData, i: number, a: Array<GameData>) => {
+  const idx = a.findIndex((game) => game.id === g.id);
+  return idx === i;
+};
+
 const draggableMap = (game: GameData, idx: number) => {
   return (
     <Draggable key={game.id!} draggableId={game.id!} index={idx}>
@@ -69,7 +74,9 @@ export default function App() {
       let shuffled: Array<GameData> = [];
       if (saved) {
         let parsed: Array<GameData | Array<GameData>> = JSON.parse(saved);
-        setCompleted(parsed);
+        setCompleted(
+          parsed.map((v) => (Array.isArray(v) ? v.filter(uniqueFilter) : v))
+        );
 
         const nextIndex = parsed.findIndex((p) => Array.isArray(p));
         if (nextIndex > -1) {
@@ -91,13 +98,14 @@ export default function App() {
       } else {
         const progress = localStorage.getItem(PROGRESS_KEY);
         if (progress) {
-          const { index, better, worse, pivot, sorted, remaining } = JSON.parse(progress);
+          const { index, better, worse, pivot, sorted, remaining } =
+            JSON.parse(progress);
           setIndex(index);
-          setBetter(better);
-          setWorse(worse);
+          setBetter(better.filter(uniqueFilter));
+          setWorse(worse.filter(uniqueFilter));
           setPivot(pivot);
-          setSorted(sorted);
-          setRemaining(remaining);
+          setSorted(sorted.map((v: Array<GameData>) => v.filter(uniqueFilter)));
+          setRemaining(remaining.filter(uniqueFilter));
         } else {
           setPivot(shuffled[0]);
           if (shuffled.length < 11) {
@@ -231,10 +239,15 @@ export default function App() {
 
   return (
     <div className={styles.outerContainer}>
-      <div className={styles.reset} onClick={() => {
-        localStorage.removeItem(PROGRESS_KEY);
-        router.push("rate");
-      }}>reset progress</div>
+      <div
+        className={styles.reset}
+        onClick={() => {
+          localStorage.removeItem(PROGRESS_KEY);
+          router.push("rate");
+        }}
+      >
+        reset progress
+      </div>
       <Status index={index} sorted={sorted} completed={completed} rLen={rLen} />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
