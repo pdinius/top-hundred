@@ -51,10 +51,10 @@ const draggableMap = (game: GameData, idx: number) => {
 };
 
 export default function App() {
-  const [sorted, setSorted] = useState<Array<Array<GameData>>>([[], []]);
   const [completed, setCompleted] = useState<Array<Array<GameData> | GameData>>(
     []
   );
+  const [sorted, setSorted] = useState<Array<Array<GameData>>>([[], []]);
   const [worse, setWorse] = useState<Array<GameData>>([]);
   const [better, setBetter] = useState<Array<GameData>>([]);
   const [pivot, setPivot] = useState<GameData>();
@@ -69,55 +69,50 @@ export default function App() {
 
     if (typeof window !== "undefined") {
       const data = localStorage.getItem(LOCAL_KEY);
-      const saved = localStorage.getItem(SAVED_KEY);
-      let finished = false;
+      const completedSave = localStorage.getItem(SAVED_KEY);
       let shuffled: Array<GameData> = [];
-      if (saved) {
-        let parsed: Array<GameData | Array<GameData>> = JSON.parse(saved);
-        parsed = parsed.map((v) => (Array.isArray(v) ? v.filter(uniqueFilter) : v));
+
+      if (completedSave) {
+        const parsed: Array<GameData | Array<GameData>> = JSON.parse(completedSave);
         setCompleted(parsed);
-        console.log(parsed);
-        console.log(parsed.flat());
 
         const nextIndex = parsed.findIndex((p) => Array.isArray(p));
         if (nextIndex > -1) {
           setIndex(nextIndex);
           shuffled = shuffle(parsed[nextIndex] as Array<GameData>);
         } else {
-          finished = true;
+          router.push("results");
         }
       } else if (data) {
-        const parsed: Array<GameData> = JSON.parse(data).map((v: GameData) => {
+        shuffled = shuffle(JSON.parse(data).map((v: GameData) => {
           v.name = cleanString(v.name);
           return v;
-        });
+        }));
         setCompleted([shuffled]);
-        shuffled = shuffle(parsed);
-      }
-      if (finished) {
-        router.push("results");
       } else {
-        const progress = localStorage.getItem(PROGRESS_KEY);
-        if (progress) {
-          const { index, better, worse, pivot, sorted, remaining } =
-            JSON.parse(progress);
-          setIndex(index);
-          setBetter(better.filter(uniqueFilter));
-          setWorse(worse.filter(uniqueFilter));
-          setPivot(pivot);
-          setSorted(sorted.map((v: Array<GameData>) => v.filter(uniqueFilter)));
-          setRemaining(remaining.filter(uniqueFilter));
+        router.push("/");
+      }
+
+      const progress = localStorage.getItem(PROGRESS_KEY);
+      if (progress) {
+        const { index, better, worse, pivot, sorted, remaining } =
+          JSON.parse(progress);
+        setIndex(index);
+        setBetter(better.filter(uniqueFilter));
+        setWorse(worse.filter(uniqueFilter));
+        setPivot(pivot);
+        setSorted(sorted.map((v: Array<GameData>) => v.filter(uniqueFilter)));
+        setRemaining(remaining.filter(uniqueFilter));
+      } else {
+        setPivot(shuffled[0]);
+        if (shuffled.length < 11) {
+          const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
+          setWorse(shuffled.slice(1, cutoff));
+          setBetter(shuffled.slice(cutoff));
         } else {
-          setPivot(shuffled[0]);
-          if (shuffled.length < 11) {
-            const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
-            setWorse(shuffled.slice(1, cutoff));
-            setBetter(shuffled.slice(cutoff));
-          } else {
-            setWorse(shuffled.slice(1, 6));
-            setBetter(shuffled.slice(6, 11));
-            setRemaining(shuffled.slice(11));
-          }
+          setWorse(shuffled.slice(1, 6));
+          setBetter(shuffled.slice(6, 11));
+          setRemaining(shuffled.slice(11));
         }
       }
     }
