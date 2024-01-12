@@ -74,9 +74,10 @@ export default function App() {
       let shuffled: Array<GameData> = [];
       if (saved) {
         let parsed: Array<GameData | Array<GameData>> = JSON.parse(saved);
-        setCompleted(
-          parsed.map((v) => (Array.isArray(v) ? v.filter(uniqueFilter) : v))
-        );
+        parsed = parsed.map((v) => (Array.isArray(v) ? v.filter(uniqueFilter) : v));
+        setCompleted(parsed);
+        console.log(parsed);
+        console.log(parsed.flat());
 
         const nextIndex = parsed.findIndex((p) => Array.isArray(p));
         if (nextIndex > -1) {
