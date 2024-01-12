@@ -69,8 +69,9 @@ export default function App() {
       let shuffled: Array<GameData> = [];
       if (saved) {
         let parsed: Array<GameData | Array<GameData>> = JSON.parse(saved);
-        const nextIndex = parsed.findIndex((p) => Array.isArray(p));
         setCompleted(parsed);
+
+        const nextIndex = parsed.findIndex((p) => Array.isArray(p));
         if (nextIndex > -1) {
           setIndex(nextIndex);
           shuffled = shuffle(parsed[nextIndex] as Array<GameData>);
@@ -230,6 +231,10 @@ export default function App() {
 
   return (
     <div className={styles.outerContainer}>
+      <div className={styles.reset} onClick={() => {
+        localStorage.removeItem(PROGRESS_KEY);
+        router.push("rate");
+      }}>reset progress</div>
       <Status index={index} sorted={sorted} completed={completed} rLen={rLen} />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
