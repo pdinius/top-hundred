@@ -8,33 +8,12 @@ import {
   OnDragEndResponder,
 } from "react-beautiful-dnd";
 import styles from "@/styles/Rate.module.scss";
-import { cleanString } from ".";
 import { GameCard } from "@/components/GameCard";
 import { Status } from "@/components/Status";
 import { useRouter } from "next/router";
+import useQuickSort from "@/useQuickSort";
 
-const shuffle = <T,>(array: Array<T>): Array<T> => {
-  let m = array.length,
-    t,
-    i;
-
-  while (m) {
-    // Pick a remaining element…
-    i = Math.floor(Math.random() * m--);
-
-    // And swap it with the current element.
-    t = array[m];
-    array[m] = array[i];
-    array[i] = t;
-  }
-
-  return array;
-};
-
-const uniqueFilter = (g: GameData, i: number, a: Array<GameData>) => {
-  const idx = a.findIndex((game) => game.id === g.id);
-  return idx === i;
-};
+const isClient = typeof window !== "undefined";
 
 const draggableMap = (game: GameData, idx: number) => {
   return (
@@ -51,71 +30,14 @@ const draggableMap = (game: GameData, idx: number) => {
 };
 
 export default function App() {
-  const [completed, setCompleted] = useState<Array<Array<GameData> | GameData>>(
-    []
-  );
-  const [sorted, setSorted] = useState<Array<Array<GameData>>>([[], []]);
-  const [worse, setWorse] = useState<Array<GameData>>([]);
-  const [better, setBetter] = useState<Array<GameData>>([]);
-  const [pivot, setPivot] = useState<GameData>();
-  const [remaining, setRemaining] = useState<Array<GameData>>([]);
-  const [index, setIndex] = useState(0);
   const [enabled, setEnabled] = useState(false);
+  const { pivot, resetItems, sort, getStatus, columns, swap } =
+    useQuickSort<GameData>(LOCAL_KEY);
 
   const router = useRouter();
 
   useEffect(() => {
     const animation = requestAnimationFrame(() => setEnabled(true));
-
-    if (typeof window !== "undefined") {
-      const data = localStorage.getItem(LOCAL_KEY);
-      const completedSave = localStorage.getItem(SAVED_KEY);
-      let shuffled: Array<GameData> = [];
-
-      if (completedSave) {
-        const parsed: Array<GameData | Array<GameData>> = JSON.parse(completedSave);
-        setCompleted(parsed);
-
-        const nextIndex = parsed.findIndex((p) => Array.isArray(p));
-        if (nextIndex > -1) {
-          setIndex(nextIndex);
-          shuffled = shuffle(parsed[nextIndex] as Array<GameData>);
-        } else {
-          router.push("results");
-        }
-      } else if (data) {
-        shuffled = shuffle(JSON.parse(data).map((v: GameData) => {
-          v.name = cleanString(v.name);
-          return v;
-        }));
-        setCompleted([shuffled]);
-      } else {
-        router.push("/");
-      }
-
-      const progress = localStorage.getItem(PROGRESS_KEY);
-      if (progress) {
-        const { index, better, worse, pivot, sorted, remaining } =
-          JSON.parse(progress);
-        setIndex(index);
-        setBetter(better.filter(uniqueFilter));
-        setWorse(worse.filter(uniqueFilter));
-        setPivot(pivot);
-        setSorted(sorted.map((v: Array<GameData>) => v.filter(uniqueFilter)));
-        setRemaining(remaining.filter(uniqueFilter));
-      } else {
-        setPivot(shuffled[0]);
-        if (shuffled.length < 11) {
-          const cutoff = Math.ceil((shuffled.length - 1) / 2) + 1;
-          setWorse(shuffled.slice(1, cutoff));
-          setBetter(shuffled.slice(cutoff));
-        } else {
-          setWorse(shuffled.slice(1, 6));
-          setBetter(shuffled.slice(6, 11));
-          setRemaining(shuffled.slice(11));
-        }
-      }
-    }
 
     return () => {
       cancelAnimationFrame(animation);
@@ -129,122 +51,25 @@ export default function App() {
 
   const onDragEnd: OnDragEndResponder = ({ source, destination }) => {
     if (!source || !destination) return;
-    const sourceId = source.droppableId;
-    const destinId = destination.droppableId;
-    const sourceIdx = source.index;
-    const destinIdx = destination.index;
-
-    if (sourceId === destinId) {
-      const setter = sourceId === "worse" ? setWorse : setBetter;
-      setter((curr) => {
-        const copy = curr.slice();
-        const removed = copy.splice(sourceIdx, 1);
-        copy.splice(destinIdx, 0, removed[0]);
-        return copy;
-      });
-    } else {
-      const setterA = sourceId === "worse" ? setWorse : setBetter;
-      const setterB = destinId === "worse" ? setWorse : setBetter;
-
-      setterA((curr) => {
-        const copy = curr.slice();
-        const removed = copy.splice(sourceIdx, 1);
-        setterB((curr) => {
-          const copy = curr.slice();
-          copy.splice(destinIdx, 0, removed[0]);
-          return copy;
-        });
-        return copy;
-      });
-    }
+    const sourceId = source.droppableId === "worse" ? 0 : 1;
+    const destinId = destination.droppableId === "worse" ? 0 : 1;
+    swap(sourceId, destinId, source.index, destination.index);
   };
 
-  const nextGroup = () => {
-    setSorted((curr) => {
-      const copy = curr.slice();
-      copy[0].push(...worse);
-      copy[1].push(...better);
-      const progress = {
-        pivot,
-        index,
-        better,
-        worse,
-        sorted: copy,
-        remaining,
-      };
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-      return copy;
-    });
-    if (remaining.length === 0) {
-      // NEXT PIVOT
-      // Replace completed[index] with [sorted[0], pivot, sorted[1]]
-      setCompleted((curr) => {
-        let copy = curr.slice();
-        copy.splice(index, 1, sorted[0], pivot!, sorted[1]);
-        copy = copy
-          .map((v) => {
-            if (Array.isArray(v) && v.length === 1) {
-              return v[0];
-            } else {
-              return v;
-            }
-          })
-          .filter((v) => (Array.isArray(v) ? v.length > 0 : true));
-
-        if (typeof window !== "undefined") {
-          localStorage.setItem(SAVED_KEY, JSON.stringify(copy));
-        }
-
-        if (copy.every((c) => !Array.isArray(c))) {
-          router.push("results");
-          return copy;
-        }
-
-        const newIndex = copy.findIndex((v) => Array.isArray(v));
-        setIndex(newIndex);
-        const next = shuffle(copy.slice()[newIndex] as Array<GameData>);
-        setPivot(next[0]);
-        if (next.length < 11) {
-          const cutoff = Math.ceil((next.length - 1) / 2) + 1;
-          setWorse(next.slice(1, cutoff));
-          setBetter(next.slice(cutoff));
-          setRemaining([]);
-        } else {
-          setWorse(next.slice(1, 6));
-          setBetter(next.slice(6, 11));
-          setRemaining(next.slice(11));
-        }
-        return copy;
-      });
-      setSorted([[], []]);
-    } else {
-      if (remaining.length < 11) {
-        const cutoff = Math.ceil((remaining.length - 1) / 2);
-        setWorse(remaining.slice(0, cutoff));
-        setBetter(remaining.slice(cutoff));
-        setRemaining([]);
-      } else {
-        setWorse(remaining.slice(0, 5));
-        setBetter(remaining.slice(5, 10));
-        setRemaining(remaining.slice(10));
-      }
-    }
+  const resetProgress = () => {
+    localStorage.removeItem(PROGRESS_KEY);
+    // TODO: Add func to useQuickSort to reset current group.
+    // Reshuffle worse, better, current, and pivot. Update all accordingly.
   };
 
-  const rLen = worse.length + better.length + remaining.length;
+  const [A, B] = columns;
 
   return (
     <div className={styles.outerContainer}>
-      <div
-        className={styles.reset}
-        onClick={() => {
-          localStorage.removeItem(PROGRESS_KEY);
-          router.push("rate");
-        }}
-      >
+      <div className={styles.reset} onClick={resetProgress}>
         reset progress
       </div>
-      <Status index={index} sorted={sorted} completed={completed} rLen={rLen} />
+      <Status data={getStatus()} />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId={"worse"} key={"worse"}>
@@ -256,7 +81,7 @@ export default function App() {
                   className={styles.droppable}
                 >
                   <div className={styles.title}>Worse</div>
-                  {worse.map(draggableMap)}
+                  {A.map(draggableMap)}
                 </div>
               );
             }}
@@ -264,7 +89,7 @@ export default function App() {
           {pivot ? (
             <div className={styles.pivot}>
               <GameCard game={pivot} />
-              <button onClick={nextGroup}>next group</button>
+              <button onClick={sort}>next group</button>
             </div>
           ) : null}
           <Droppable droppableId={"better"} key={"better"}>
@@ -276,7 +101,7 @@ export default function App() {
                   className={styles.droppable}
                 >
                   <div className={styles.title}>Better</div>
-                  {better.map(draggableMap)}
+                  {B.map(draggableMap)}
                 </div>
               );
             }}

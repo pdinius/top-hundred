@@ -1,3 +1,4 @@
+import { cleanString } from "@/pages";
 import styles from "@/styles/Rate.module.scss";
 import { GameData } from "@/types/game-types";
 import { FC } from "react";
@@ -13,7 +14,7 @@ export const GameCard: FC<GameCardProps> = ({ game }) => {
         <img src={game.image} />
       </div>
       <div className={styles.dataContainer}>
-        <span className="bold-text">{game.name}</span>
+        <span className="bold-text">{cleanString(game.name)}</span>
         <div className={styles.linkContainer}>
           <a
             href={`https://boardgamegeek.com/boardgame/${game.id}`}

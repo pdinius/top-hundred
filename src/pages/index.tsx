@@ -10,8 +10,9 @@ import { LOCAL_KEY, PREV_KEY, SAVED_KEY } from "@/constants";
 
 export const cleanString = (s: string) => {
   s = s.replace(/&#039;/g, "'");
+  s = s.replace(/&amp;/g, "&");
   return s;
-}
+};
 
 const isServer = typeof window === "undefined";
 
@@ -29,7 +30,6 @@ export default function Home() {
     if (isServer) return;
     const loaded = localStorage.getItem(LOCAL_KEY);
     if (loaded) {
-      console.log(loaded);
       setGamedata(JSON.parse(loaded));
     }
   }, []);
@@ -209,10 +209,7 @@ export default function Home() {
             <button
               onClick={() => {
                 if (isServer) return;
-                localStorage.setItem(
-                  LOCAL_KEY,
-                  JSON.stringify(gamedata)
-                );
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(gamedata));
               }}
             >
               save
@@ -231,7 +228,7 @@ export default function Home() {
                   localStorage.removeItem(SAVED_KEY);
                 }
                 localStorage.setItem(
-                  "current-list",
+                  LOCAL_KEY,
                   JSON.stringify(gamedata.filter((g) => g.selected))
                 );
                 router.push("rate");

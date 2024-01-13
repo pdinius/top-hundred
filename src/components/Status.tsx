@@ -3,38 +3,27 @@ import { FC } from "react";
 import styles from "@/styles/Status.module.scss";
 
 interface StatusProps {
-  index: number;
-  sorted: Array<Array<GameData>>;
-  completed: Array<Array<GameData> | GameData>;
-  rLen: number;
+  data: Array<Array<GameData> | GameData>;
 }
 
-export const Status: FC<StatusProps> = ({ index, sorted, completed, rLen }) => {
-  const worse = completed.slice(0, index);
-  const better = completed.slice(index + 1);
-
+export const Status: FC<StatusProps> = ({ data }) => {
   return (
     <div className={styles.container}>
-      {Array.from({ length: worse.length }, (_, i) => (
-        <Bars key={i} item={worse[i]} />
-      ))}
-      <Bars item={sorted[0]} current />
-      <div className={`${styles.pivot} ${styles.orange}`}>{rLen}</div>
-      <Bars item={sorted[1]} current />
-      {Array.from({ length: better.length }, (_, i) => (
-        <Bars key={i} item={better[i]} />
+      {Array.from({ length: data.length }, (_, i) => (
+        <Bars key={i} item={data[i]} />
       ))}
     </div>
   );
 };
 
 interface BarsProps {
-  item: GameData | Array<GameData>;
+  item?: GameData | Array<GameData>;
   current?: boolean;
 }
 
 const Bars: FC<BarsProps> = ({ item, current }) => {
   if (Array.isArray(item)) {
+    if (item.length === 0 || item.every((v) => v === undefined)) return null;
     return (
       <div className={styles.barsContainer}>
         {Array.from({ length: item.length }, (_, i) => {
@@ -49,6 +38,9 @@ const Bars: FC<BarsProps> = ({ item, current }) => {
       </div>
     );
   } else {
-    return <div className={`${styles.bar} ${styles.complete}`} title={item.name} />;
+    if (item === undefined) return null;
+    return (
+      <div className={`${styles.bar} ${styles.complete}`} title={item.name} />
+    );
   }
 };

@@ -67,8 +67,6 @@ export default async function handler(
     const thumbs = thingText.match(/(?<=<thumbnail>)[^<]+/g) || [];
     const images = thingText.match(/(?<=<image>)[^<]+/g) || [];
 
-    console.log(names);
-
     if (!names || !thumbs || !images) break;
     for (let i = 0; i < slice.length; ++i) {
       const game = {
