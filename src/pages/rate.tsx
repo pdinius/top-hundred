@@ -69,7 +69,7 @@ export default function App() {
       <div className={styles.reset} onClick={resetProgress}>
         reset progress
       </div>
-      <Status data={getStatus()} />
+      <Status {...getStatus()} />
       <div className={styles.container}>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId={"worse"} key={"worse"}>

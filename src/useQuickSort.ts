@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { SAVED_KEY } from "./constants";
+import { useRouter } from "next/router";
 
 const shuffle = <T>(array: Array<T>): Array<T> => {
   let m = array.length;
@@ -51,8 +53,9 @@ export default function useQuickSort<T>(init: Array<T> | string) {
   const [better, setBetter] = useState<Array<T>>([]); // items better than pivot
   const [idx, setIdx] = useState(0); // keeping track of the index in sorted to splice [worse, pivot, better] into once current is empty
 
+  const router = useRouter();
+
   useEffect(() => {
-    console.log(shuffled.length);
     updateColumns(shuffled.slice(1));
   }, []);
 
@@ -70,56 +73,68 @@ export default function useQuickSort<T>(init: Array<T> | string) {
     const shuffled = shuffle(items);
     setSorted([]);
     setPivot(shuffled[0]);
-    setCurrent(shuffled.slice(1));
+    updateColumns(shuffled.slice(1));
+    setCurrent(shuffled.slice(11));
     setWorse([]);
     setBetter([]);
     setIdx(0);
   };
 
   const sort = () => {
-    append(setWorse, columns[0]);
-    append(setBetter, columns[1]);
     setCurrent((curr) => {
       const columnItems = curr.slice(0, 10);
-      const copy = curr.slice(10);
 
       if (columnItems.length > 0) {
+        const copy = curr.slice(10);
+        append(setWorse, columns[0]);
+        append(setBetter, columns[1]);
         updateColumns(columnItems);
         return copy;
       } else {
-        console.log(sorted);
-        return copy;
-        // console.log(`WORSE: ${worse.length + columns[0].length}, BETTER: ${better.length + columns[1].length}`);
-        // // NEXT GROUP
-        // let next: Array<T> = [];
-        // let copy = sorted.slice();
-        // copy.splice(idx, 1, worse, pivot, better);
-        // copy = copy
-        //   .map((v) => (Array.isArray(v) && v.length === 1 ? v[0] : v)) // turn single element arrays into just that element
-        //   .filter((v) => (Array.isArray(v) ? v.length > 0 : true)); // remove empty arrays altogether (e.g. when worse or better have no elements)
-        // const nextIdx = copy.findIndex((v) => Array.isArray(v));
-        // if (nextIdx > -1) {
-        //   setIdx(nextIdx);
-        //   next = (copy[nextIdx] as Array<T>);
-        // } else {
-        //   // DONE SORTING
-        // }
-        // setSorted(copy);
-        // setPivot(next[0]);
-        // updateColumns(next.slice(1));
-        // return next.slice(1);
+        let sortedCopy = sorted.slice();
+        sortedCopy.splice(
+          idx,
+          0,
+          worse.concat(columns[0]),
+          pivot,
+          better.concat(columns[1])
+        );
+        sortedCopy = sortedCopy
+          .filter((v) => (Array.isArray(v) ? v.length > 0 : true))
+          .map((v) => (Array.isArray(v) && v.length === 1 ? v[0] : v));
+        const nextIdx = sortedCopy.findIndex((v) => Array.isArray(v));
+        if (nextIdx > -1) {
+          const next = sortedCopy.splice(nextIdx, 1)[0] as Array<T>;
+          setSorted(sortedCopy);
+          setWorse([]);
+          setBetter([]);
+          setIdx(nextIdx);
+          setPivot(next[0]);
+          updateColumns(next.slice(1));
+          return next.slice(11);
+        } else {
+          // DONE SORTING
+          if (isClient) {
+            localStorage.setItem(SAVED_KEY, JSON.stringify(sortedCopy));
+            router.push("results");
+          }
+          return curr;
+        }
       }
     });
   };
 
   const getStatus = () => {
-    return [
-      ...sorted.slice(0, idx),
-      worse,
-      [pivot, ...current],
-      better,
-      ...sorted.slice(idx),
-    ];
+    return {
+      data: [
+        ...sorted.slice(0, idx),
+        worse,
+        [pivot, ...current, ...columns.flat()],
+        better,
+        ...sorted.slice(idx),
+      ],
+      index: idx + 1,
+    };
   };
 
   const swap = (from: number, to: number, fromIdx: number, toIdx: number) => {

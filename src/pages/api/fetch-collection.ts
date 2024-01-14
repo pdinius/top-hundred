@@ -22,6 +22,7 @@ export default async function handler(
   let url = `https://boardgamegeek.com/xmlapi2/collection?username=${username}`;
   if (played === "true") url += "&played=1";
   let text: string;
+  console.log(url);
 
   try {
     if (url in cache) {
