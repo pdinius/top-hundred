@@ -1725,16 +1725,16 @@ export default function useQuickSort<T>(init: Array<T> | string) {
 
     if (!isClient) return;
 
-    // const progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
-    // if (progress && isProgress<T>(progress)) {
-    //   setSorted(progress.sorted);
-    //   setPivot(progress.pivot);
-    //   setColumns(progress.columns);
-    //   setCurrent(progress.current);
-    //   setWorse(progress.worse);
-    //   setBetter(progress.better);
-    //   setIdx(progress.idx);
-    // }
+    const progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+    if (progress && isProgress<T>(progress)) {
+      setSorted(progress.sorted);
+      setPivot(progress.pivot);
+      setColumns(progress.columns);
+      setCurrent(progress.current);
+      setWorse(progress.worse);
+      setBetter(progress.better);
+      setIdx(progress.idx);
+    }
   }, []);
 
   const calculateColumns = (items: Array<T>) => {
