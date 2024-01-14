@@ -6,7 +6,7 @@ import { GamePreview } from "@/components/GamePreview";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { Checkbox } from "@/components/Checkbox";
 import { useRouter } from "next/router";
-import { LOCAL_KEY, PREV_KEY, SAVED_KEY } from "@/constants";
+import { LOCAL_KEY, PREV_KEY, PROGRESS_KEY } from "@/constants";
 
 export const cleanString = (s: string) => {
   s = s.replace(/&#039;/g, "'");
@@ -137,6 +137,9 @@ export default function Home() {
     setGamedata((curr) => {
       const copy = curr.slice();
       copy[idx].selected = !state;
+      if (!isServer) {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+      }
       return copy;
     });
   };
@@ -206,26 +209,18 @@ export default function Home() {
             >
               deselect all
             </button>
-            <button
-              onClick={() => {
-                if (isServer) return;
-                localStorage.setItem(LOCAL_KEY, JSON.stringify(gamedata));
-              }}
-            >
-              save
-            </button>
             <div className={styles.pushed} />
             <button
               onClick={() => {
-                const saved = localStorage.getItem(SAVED_KEY);
-                if (saved) {
+                const progress = localStorage.getItem(PROGRESS_KEY);
+                if (progress) {
                   const prev = localStorage.getItem(PREV_KEY);
                   let prevArr: Array<string> = [];
                   if (prev) {
                     prevArr = JSON.parse(prev);
                   }
-                  prevArr.push(saved);
-                  localStorage.removeItem(SAVED_KEY);
+                  prevArr.push(progress);
+                  localStorage.removeItem(PROGRESS_KEY);
                 }
                 localStorage.setItem(
                   LOCAL_KEY,
