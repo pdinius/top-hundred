@@ -56,17 +56,11 @@ export default function App() {
     swap(sourceId, destinId, source.index, destination.index);
   };
 
-  const resetProgress = () => {
-    localStorage.removeItem(PROGRESS_KEY);
-    // TODO: Add func to useQuickSort to reset current group.
-    // Reshuffle worse, better, current, and pivot. Update all accordingly.
-  };
-
   const [A, B] = columns;
 
   return (
     <div className={styles.outerContainer}>
-      <div className={styles.reset} onClick={resetProgress}>
+      <div className={styles.reset} onClick={resetItems}>
         reset progress
       </div>
       <Status {...getStatus()} />

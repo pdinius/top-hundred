@@ -23,7 +23,6 @@ interface BarsProps {
 }
 
 const Bars: FC<BarsProps> = ({ item, current }) => {
-  console.log(item);
   if (Array.isArray(item)) {
     if (item.length === 0 || item.every((v) => v === undefined)) return null;
     return (
