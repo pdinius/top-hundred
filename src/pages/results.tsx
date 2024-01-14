@@ -1,22 +1,20 @@
 import { SAVED_KEY } from "@/constants";
 import { GameData } from "@/types/game-types";
-import { useEffect, useState } from "react";
 import styles from "@/styles/Results.module.scss";
 import { GameResult } from "@/components/GameResult";
+import resJSON from "@/assets/res.json";
 
 export default function Results() {
-  const [results, setResults] = useState<Array<GameData>>([]);
+  let results: Array<GameData> = resJSON;
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const res = localStorage.getItem(SAVED_KEY);
-      if (res) setResults(JSON.parse(res).reverse());
-    }
-  }, []);
+  if (typeof window !== "undefined") {
+    const res = localStorage.getItem(SAVED_KEY);
+    if (res) results =JSON.parse(res);
+  }
 
   return (
     <div className={styles.container}>
-      {results.map((g, i) => (
+      {results.reverse().map((g, i) => (
         <GameResult key={i} game={g} index={i} />
       ))}
     </div>

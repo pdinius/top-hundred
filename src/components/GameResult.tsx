@@ -1,6 +1,7 @@
 import { GameData } from "@/types/game-types";
 import { FC } from "react";
 import styles from "@/styles/Results.module.scss";
+import { cleanString } from "@/pages";
 
 interface GameResultProps {
   game: GameData;
@@ -15,7 +16,7 @@ export const GameResult: FC<GameResultProps> = ({ game, index }) => {
         <div className={styles.imageContainer}>
           <img src={game.fullSize} title={game.name} />
         </div>
-        <div className={`bold-text ${styles.title}`}>{game.name}</div>
+        <div className={styles.title}>{cleanString(game.name)}</div>
       </div>
       <div className={styles.svgContainer}>
         {index === 0 ? (
