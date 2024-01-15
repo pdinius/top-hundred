@@ -66,7 +66,14 @@ export default function Home() {
     setLoading(true);
     try {
       const fetched = await fetch(
-        `/api/fetch-games?games=${games.trim().replace(/\n/g, ",")}`
+        "/api/fetch-games",
+        {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(games.trim().split("\n"))
+        }
       );
       const json: { message: string; data: Array<GameData> } =
         await fetched.json();

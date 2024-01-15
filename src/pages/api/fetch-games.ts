@@ -12,14 +12,13 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
+  if (req.method !== 'POST') {
+    res.status(405).send({ message: 'Only POST requests allowed' })
+    return
+  }
   const fetchCache = JSON.parse(fs.readFileSync(CACHE_PATH, "utf-8"));
   const gamedataCache = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
-  const queryGames = req.query.games;
-  if (typeof queryGames !== "string") {
-    res.status(400).json({ message: "F" });
-    return;
-  }
-  const games = queryGames.split(",");
+  const games = req.body;
   const gamedata: Array<GameData> = [];
   const ids: Array<string> = [];
 
@@ -31,6 +30,7 @@ export default async function handler(
     const searchUrl = `https://boardgamegeek.com/xmlapi2/search?query=${encodeURI(
       g
     )}&exact=1`;
+    console.log(searchUrl);
 
     let text: string;
     if (fetchCache[searchUrl]) {
@@ -44,7 +44,7 @@ export default async function handler(
 
     const reId = text.match(/(?<=id=")\d+/g) || [];
     reId.sort((a, b) => +b - +a);
-    const id = ids[0];
+    const id = reId[0];
 
     if (id) ids.push(id);
   }
@@ -52,6 +52,7 @@ export default async function handler(
   for (let i = 0; i < ids.length; i += 40) {
     const slice = ids.slice(i, i + 40);
     const thingUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${slice.join(',')}`;
+    console.log(thingUrl);
 
     let thingText: string;
     if (fetchCache[thingUrl]) {
