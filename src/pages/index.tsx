@@ -52,6 +52,9 @@ export default function Home() {
               copy.push({ ...gd, selected: false });
             }
           }
+          if (!isServer) {
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+          }
           return copy;
         });
       }
@@ -85,6 +88,9 @@ export default function Home() {
               copy.push({ ...gd, selected: false });
             }
           }
+          if (!isServer) {
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+          }
           return copy;
         });
       }
@@ -101,6 +107,9 @@ export default function Home() {
       setGamedata((curr) => {
         const copy = curr.slice();
         copy[idx].id = e.target.value;
+        if (!isServer) {
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+        }
         return copy;
       });
     };
@@ -117,6 +126,9 @@ export default function Home() {
                 setGamedata((curr) => {
                   const copy = curr.slice();
                   copy[idx] = json.data;
+                  if (!isServer) {
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+                  }
                   return copy;
                 });
               })
@@ -135,6 +147,9 @@ export default function Home() {
     setGamedata((curr) => {
       const copy = curr.slice();
       copy.splice(idx, 1);
+      if (!isServer) {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+      }
       return copy;
     });
   };
@@ -199,8 +214,11 @@ export default function Home() {
             <button
               onClick={() =>
                 setGamedata((curr) => {
-                  const copy = curr.slice();
-                  return copy.map((g) => ({ ...g, selected: true }));
+                  const copy = curr.slice().map((g) => ({ ...g, selected: true }));
+                  if (!isServer) {
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+                  }
+                  return copy;
                 })
               }
             >
@@ -209,8 +227,11 @@ export default function Home() {
             <button
               onClick={() =>
                 setGamedata((curr) => {
-                  const copy = curr.slice();
-                  return copy.map((g) => ({ ...g, selected: false }));
+                  const copy = curr.slice().map((g) => ({ ...g, selected: false }));
+                  if (!isServer) {
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(copy));
+                  }
+                  return copy;
                 })
               }
             >
